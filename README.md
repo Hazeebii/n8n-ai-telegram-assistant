@@ -31,3 +31,16 @@ An AI powered Telegram assistant that can understand text and voice messages, re
 ## Author
 
 Hazeeb A
+
+---
+
+## 📸 Screenshots
+
+### n8n Workflow
+
+![Workflow](workflow.png.png)
+
+### Telegram Bot Reply + Voice Understanding
+
+![Telegram](Telegram%20reply%26voice%20test.png.png)
+
