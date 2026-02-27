@@ -1,0 +1,397 @@
+{
+  "name": "Telegram personal Assistant Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1120,
+        -352
+      ],
+      "id": "ea2ff5a5-de6a-4adc-a67a-bd33f90dd008",
+      "name": "Telegram Trigger",
+      "webhookId": "83c6a3da-0445-400b-8ff8-0c1b4b3b06db",
+      "credentials": {
+        "telegramApi": {
+          "id": "zRPl736OQDu5b81k",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "95cabeb6-087f-47d1-bda0-7a6310030e65",
+              "name": "user_message",
+              "value": "={{$json.message?.text || $json.results?.channels[0]?.alternatives[0]?.transcript}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -400,
+        -352
+      ],
+      "id": "822894ff-20c4-4165-aecf-67264fb89056",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{$json.user_message}}",
+        "options": {
+          "systemMessage": "=You are a personal assistant that helps users fulfill their requests.\n\nWhen you are asked to perform a task on the current date, please use the current time and date: {{ $now }}\n\n## Output\n\nYou should output the result and don't include anything unnecessary. Just make sure that you politely answer the user's question and ask if any other information is required.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -208,
+        -352
+      ],
+      "id": "6582999a-4c10-4564-9e79-7bed2ae889c9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        -96
+      ],
+      "id": "0f99ced6-ba94-4e1e-bfbf-382cc273db25",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "f27N22umeWdA4QCZ",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"chat\"][\"id\"]}}",
+        "text": "={{$json.output}}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        96,
+        -320
+      ],
+      "id": "d4810ed3-f58e-42c7-81cb-130939393337",
+      "name": "Send a text message",
+      "webhookId": "d1673447-53ff-4ef3-81fc-b3c60a3f4a50",
+      "credentials": {
+        "telegramApi": {
+          "id": "zRPl736OQDu5b81k",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 7
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -64,
+        -96
+      ],
+      "id": "00934d32-91ad-4e0f-9484-d9f57e9ba71d",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "3a1842df-fba9-4d9f-92fd-b9e72a54f7ee"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8fbbe7c0-460c-451f-a247-6e646d400e6d",
+                    "leftValue": "={{ $json.message.voice.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "voice"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -944,
+        -352
+      ],
+      "id": "95fc903c-7b68-457c-b5f8-f35432faec48",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -896,
+        -112
+      ],
+      "id": "27a950a5-c116-427c-88d1-0367fce297a4",
+      "name": "Get a file",
+      "webhookId": "a724c9f0-8567-4b3b-82a4-f82f5957a057",
+      "credentials": {
+        "telegramApi": {
+          "id": "zRPl736OQDu5b81k",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.deepgram.com/v1/listen",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Token YOUR_DEEPGRAM_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "audio/ogg"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -720,
+        -112
+      ],
+      "id": "fb1b3de6-2b98-457d-8695-115fede7f969",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -576,
+        -352
+      ],
+      "id": "06e86e76-8f42-4eea-9c26-86aef024bcb9",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a59a6132-7858-411c-ad6d-69d97a52f80a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7ee4ad486d9bb591b77f6db4cef3a119e3315d5473a8b2dfea29d91aed32942a"
+  },
+  "id": "iTJHPRTeGo9fPkvC",
+  "tags": [
+    {
+      "updatedAt": "2026-02-25T19:06:22.949Z",
+      "createdAt": "2026-02-25T19:06:22.949Z",
+      "id": "PUwBEKtMaKBWLEep",
+      "name": "llm-agent"
+    },
+    {
+      "updatedAt": "2026-02-25T19:05:58.783Z",
+      "createdAt": "2026-02-25T19:05:58.783Z",
+      "id": "lDMXLADN4SzXUTiu",
+      "name": "ai agent"
+    }
+  ]
+}
